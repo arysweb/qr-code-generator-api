@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code Generator API</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#18181f;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0f0f5;--muted:#7a7a8e;
+  --accent:#5b9cf6;--accent-dim:rgba(91,156,246,0.1);--accent-border:rgba(91,156,246,0.25);
+  --red:#ff5f5f;--red-dim:rgba(255,95,95,0.1);
+  --amber:#ffb340;
+  --green:#7fff6e;
+  --mono:'IBM Plex Mono',monospace;--display:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(91,156,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(91,156,246,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:3rem 1.5rem 4rem;width:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent-border);background:var(--accent-dim);padding:4px 10px;border-radius:4px;margin-bottom:1rem}
+.chip::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+h1{font-family:var(--display);font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.05;letter-spacing:-0.02em;margin-bottom:0.75rem}
+h1 em{font-style:normal;color:var(--accent)}
+.sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:2rem}
+.tabs{display:flex;gap:4px;margin-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.tab{font-family:var(--mono);font-size:12px;color:var(--muted);background:none;border:none;padding:8px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color 0.15s,border-color 0.15s;letter-spacing:0.05em}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{display:none}
+.panel.active{display:block}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:640px){.two-col{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:1.25rem}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+input[type="text"],input[type="color"],select,textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 12px;border-radius:8px;outline:none;transition:border-color 0.2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+textarea{min-height:80px;resize:vertical}
+input[type="color"]{height:40px;padding:4px 8px;cursor:pointer}
+input[type="range"]{width:100%;accent-color:var(--accent);margin-top:4px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{background:var(--accent);color:#fff;font-family:var(--mono);font-size:13px;font-weight:500;padding:13px 24px;border:none;border-radius:8px;cursor:pointer;width:100%;transition:opacity 0.15s,transform 0.1s;margin-top:4px}
+.btn:hover{opacity:0.88}
+.btn:active{transform:scale(0.97)}
+.preview-box{background:var(--surface);border:1px solid var(--border2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:320px;padding:1.5rem;gap:1rem}
+.qr-img{border-radius:8px;max-width:100%;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+.preview-empty{text-align:center;color:var(--muted);font-size:13px;line-height:1.7}
+.preview-empty .icon{font-size:3rem;margin-bottom:1rem;opacity:0.3}
+.download-row{display:flex;gap:8px;width:100%}
+.dl-btn{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px;border-radius:8px;cursor:pointer;text-align:center;transition:border-color 0.15s}
+.dl-btn:hover{border-color:var(--accent);color:var(--accent)}
+.meta-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.meta-pill{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;color:var(--muted)}
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+.spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{background:var(--red-dim);border:1px solid rgba(255,95,95,0.25);border-radius:8px;padding:1rem;font-size:13px;color:var(--red);width:100%;text-align:center}
+.code-block{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1.25rem;font-size:12px;line-height:1.8;overflow-x:auto;white-space:pre;color:var(--muted);margin-bottom:1.5rem}
+.ep-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;margin-top:1.5rem;display:block}
+.ep-label:first-child{margin-top:0}
+.params-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:1.5rem}
+.params-table th{text-align:left;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--border)}
+.params-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.params-table tr:last-child td{border-bottom:none}
+.tag{display:inline-block;font-size:10px;padding:2px 6px;border-radius:3px;margin-left:4px}
+.tag.req{background:var(--red-dim);color:var(--red)}
+.tag.opt{background:var(--accent-dim);color:var(--accent)}
+.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.5rem}
+.check{background:var(--surface);padding:1rem 1.25rem}
+.clabel{font-size:11px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:4px}
+.cval{font-size:13px;font-weight:500}
+.ok{color:var(--green)}
+.blue{color:var(--accent)}
+.amber{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="chip">Live Demo</div>
+  <h1>QR Code<br><em>Generator</em> API</h1>
+  <p class="sub">Generate styled QR codes in PNG, SVG or Base64 &middot; Custom colors &middot; Logo-ready sizes</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" id="tab-generate">Generate</button>
+  <button class="tab" id="tab-docs">Docs</button>
+</div>
+
+<!-- GENERATE -->
+<div class="panel active" id="panel-generate">
+  <div class="two-col">
+    <!-- Controls -->
+    <div>
+      <div class="card">
+        <div class="field">
+          <label>Content (URL, text, anything)</label>
+          <textarea id="qr-data" placeholder="https://yourwebsite.com">https://github.com/arysweb</textarea>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Format</label>
+            <select id="qr-format">
+              <option value="base64">PNG (Base64)</option>
+              <option value="svg">SVG</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Error correction</label>
+            <select id="qr-ec">
+              <option value="L">L — Low (7%)</option>
+              <option value="M" selected>M — Medium (15%)</option>
+              <option value="Q">Q — High (25%)</option>
+              <option value="H">H — Max (30%)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Dark color</label>
+            <input type="color" id="qr-dark" value="#000000">
+          </div>
+          <div class="field">
+            <label>Light color</label>
+            <input type="color" id="qr-light" value="#ffffff">
+          </div>
+        </div>
+        <div class="field">
+          <label>Size: <span id="size-val">300</span>px</label>
+          <input type="range" id="qr-size" min="100" max="800" value="300" step="50">
+        </div>
+        <div class="field">
+          <label>Margin: <span id="margin-val">2</span></label>
+          <input type="range" id="qr-margin" min="0" max="8" value="2" step="1">
+        </div>
+        <button class="btn" id="generate-btn">Generate QR Code</button>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div>
+      <div class="preview-box" id="preview-box">
+        <div class="preview-empty">
+          <div class="icon">&#9638;</div>
+          <div>Your QR code will appear here</div>
+          <div style="margin-top:4px;font-size:11px">Fill in the content and click Generate</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DOCS -->
+<div class="panel" id="panel-docs">
+  <span class="ep-label">GET /generate</span>
+  <div class="code-block">GET /generate?data=https://example.com&size=300&format=png&dark=%23000000&light=%23ffffff
+
+Returns a PNG image directly (binary).
+For Base64 or SVG use format=base64 or format=svg.</div>
+
+  <span class="ep-label">POST /generate</span>
+  <div class="code-block">POST /generate
+Content-Type: application/json
+
+{
+  "data": "https://example.com",
+  "size": 300,
+  "format": "base64",
+  "dark": "#000000",
+  "light": "#ffffff",
+  "margin": 2,
+  "error_correction": "M"
+}
+
+Response:
+{
+  "format": "base64",
+  "data": "data:image/png;base64,iVBORw0KGgo...",
+  "size": 300,
+  "dark": "#000000",
+  "light": "#ffffff",
+  "margin": 2,
+  "error_correction": "M",
+  "content": "https://example.com"
+}</div>
+
+  <span class="ep-label">Parameters</span>
+  <table class="params-table">
+    <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+    <tr><td>data <span class="tag req">required</span></td><td>string</td><td>—</td><td>Content to encode. Max 2000 chars.</td></tr>
+    <tr><td>format <span class="tag opt">optional</span></td><td>string</td><td>png</td><td>Output format: png, svg, base64</td></tr>
+    <tr><td>size <span class="tag opt">optional</span></td><td>number</td><td>300</td><td>Width in pixels (100–1000)</td></tr>
+    <tr><td>dark <span class="tag opt">optional</span></td><td>string</td><td>#000000</td><td>Dark module color (hex)</td></tr>
+    <tr><td>light <span class="tag opt">optional</span></td><td>string</td><td>#ffffff</td><td>Light module color (hex)</td></tr>
+    <tr><td>margin <span class="tag opt">optional</span></td><td>number</td><td>2</td><td>Quiet zone size (0–10)</td></tr>
+    <tr><td>error_correction <span class="tag opt">optional</span></td><td>string</td><td>M</td><td>L, M, Q, H — higher = more damage resistant</td></tr>
+  </table>
+
+  <span class="ep-label">Pricing tiers</span>
+  <div class="checks">
+    <div class="check"><span class="clabel">Free</span><span class="cval ok">100 req/mo</span></div>
+    <div class="check"><span class="clabel">Basic $2/mo</span><span class="cval blue">50,000 req/mo</span></div>
+    <div class="check"><span class="clabel">Pro $5/mo</span><span class="cval amber">200,000 req/mo</span></div>
+    <div class="check"><span class="clabel">Ultra $15/mo</span><span class="cval" style="color:var(--text)">1,000,000 req/mo</span></div>
+  </div>
+
+  <span class="ep-label">Code examples</span>
+  <div class="code-block">// JavaScript
+const res = await fetch('https://YOUR-RAILWAY-URL/generate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ data: 'https://example.com', format: 'base64', size: 300 })
+});
+const { data } = await res.json();
+document.querySelector('img').src = data;
+
+# Python
+import requests
+res = requests.post('https://YOUR-RAILWAY-URL/generate',
+  json={ 'data': 'https://example.com', 'format': 'base64', 'size': 300 })
+print(res.json()['data'])</div>
+</div>
+
+</div>
+
+<script>
+var API = 'https://YOUR-RAILWAY-URL';
+
+document.getElementById('tab-generate').addEventListener('click', function(){ activateTab('generate'); });
+document.getElementById('tab-docs').addEventListener('click', function(){ activateTab('docs'); });
+
+function activateTab(name) {
+  ['generate','docs'].forEach(function(t) {
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+    document.getElementById('panel-' + t).classList.toggle('active', t === name);
+  });
+}
+
+document.getElementById('qr-size').addEventListener('input', function() {
+  document.getElementById('size-val').textContent = this.value;
+});
+document.getElementById('qr-margin').addEventListener('input', function() {
+  document.getElementById('margin-val').textContent = this.value;
+});
+
+document.getElementById('generate-btn').addEventListener('click', generateQR);
+
+function generateQR() {
+  var data = document.getElementById('qr-data').value.trim();
+  if (!data) return;
+
+  var format = document.getElementById('qr-format').value;
+  var size = document.getElementById('qr-size').value;
+  var margin = document.getElementById('qr-margin').value;
+  var dark = document.getElementById('qr-dark').value;
+  var light = document.getElementById('qr-light').value;
+  var ec = document.getElementById('qr-ec').value;
+  var box = document.getElementById('preview-box');
+
+  box.innerHTML = '<div class="loading"><div class="spinner"></div>Generating...</div>';
+
+  fetch(API + '/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: data,
+      format: format,
+      size: parseInt(size),
+      margin: parseInt(margin),
+      dark: dark,
+      light: light,
+      error_correction: ec
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(result) {
+    if (result.error) {
+      box.innerHTML = '<div class="error-box">' + result.error + '</div>';
+      return;
+    }
+
+    var imgSrc = result.data;
+    if (format === 'svg') {
+      imgSrc = 'data:image/svg+xml;base64,' + btoa(result.data);
+    }
+
+    var h = '<img class="qr-img" src="' + imgSrc + '" width="' + Math.min(parseInt(size), 280) + '" alt="QR Code">';
+    h += '<div class="meta-row">';
+    h += '<span class="meta-pill">' + size + 'px</span>';
+    h += '<span class="meta-pill">' + format.toUpperCase() + '</span>';
+    h += '<span class="meta-pill">EC: ' + ec + '</span>';
+    h += '</div>';
+    h += '<div class="download-row">';
+    h += '<button class="dl-btn" onclick="downloadQR(\'' + imgSrc + '\', \'png\')">Download PNG</button>';
+    h += '<button class="dl-btn" onclick="copyBase64(\'' + result.data.substring(0, 50) + '...\')">Copy Base64</button>';
+    h += '</div>';
+    box.innerHTML = h;
+    window._lastQR = result;
+  })
+  .catch(function() {
+    box.innerHTML = '<div class="error-box">Could not reach the API. Please try again.</div>';
+  });
+}
+
+function downloadQR(src, fmt) {
+  var a = document.createElement('a');
+  a.href = src;
+  a.download = 'qrcode.' + fmt;
+  a.click();
+}
+
+function copyBase64(data) {
+  if (window._lastQR) {
+    navigator.clipboard.writeText(window._lastQR.data).then(function() {
+      alert('Base64 copied to clipboard!');
+    });
+  }
+}
+</script>
+</body>
+</html>
