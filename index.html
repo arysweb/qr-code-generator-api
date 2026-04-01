@@ -212,7 +212,7 @@ Response:
 
   <span class="ep-label">Code examples</span>
   <div class="code-block">// JavaScript
-const res = await fetch('https://YOUR-RAILWAY-URL/generate', {
+const res = await fetch('https://qr-code-generator-api-production-6b92.up.railway.app/generate', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ data: 'https://example.com', format: 'base64', size: 300 })
@@ -222,7 +222,7 @@ document.querySelector('img').src = data;
 
 # Python
 import requests
-res = requests.post('https://YOUR-RAILWAY-URL/generate',
+res = requests.post('https://qr-code-generator-api-production-6b92.up.railway.app/generate',
   json={ 'data': 'https://example.com', 'format': 'base64', 'size': 300 })
 print(res.json()['data'])</div>
 </div>
@@ -230,7 +230,7 @@ print(res.json()['data'])</div>
 </div>
 
 <script>
-var API = 'https://YOUR-RAILWAY-URL';
+var API = 'https://qr-code-generator-api-production-6b92.up.railway.app';
 
 document.getElementById('tab-generate').addEventListener('click', function(){ activateTab('generate'); });
 document.getElementById('tab-docs').addEventListener('click', function(){ activateTab('docs'); });
